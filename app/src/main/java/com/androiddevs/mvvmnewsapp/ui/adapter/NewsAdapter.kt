@@ -16,9 +16,12 @@ class NewsAdapter : RecyclerView.Adapter<NewsAdapter.NewsViewHolder>() {
     inner class NewsViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
 
         fun bind(data: Article) {
-            Glide.with(view.ivArticleImage).load(data.urlToImage).into(view.ivArticleImage)
+            Glide.with(view.ivArticleImage)
+                .load(data.urlToImage)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .into(view.ivArticleImage)
             view.tvDescription.text = data.description
-            view.tvSource.text = data.source.toString()
+            view.tvSource.text = data.source.name
             view.tvTitle.text = data.title
             view.tvPublishedAt.text = data.publishedAt
             view.setOnClickListener {

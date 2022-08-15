@@ -6,13 +6,13 @@ apply plugin: "androidx.navigation.safeargs.kotlin"
 apply plugin:"dagger.hilt.android.plugin"
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "29.0.3"
 
     defaultConfig {
         applicationId "com.androiddevs.mvvmnewsapp"
-        minSdkVersion 21
-        targetSdkVersion 30
+        minSdkVersion 23
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
 
@@ -52,9 +52,6 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
-    // Architectural Components
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1"
-
     //room
     implementation 'androidx.room:room-runtime:2.4.0-alpha04'
     kapt 'androidx.room:room-compiler:2.4.0-alpha04'
@@ -69,6 +66,8 @@ dependencies {
     // Coroutine Lifecycle Scopes
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+
 
     // Retrofit
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
