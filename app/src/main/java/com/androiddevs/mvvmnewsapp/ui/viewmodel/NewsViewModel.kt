@@ -4,8 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.ConnectivityManager.*
+import android.net.Network
 import android.net.NetworkCapabilities.*
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.*
 import com.androiddevs.mvvmnewsapp.NewsApplication
 import com.androiddevs.mvvmnewsapp.model.Article
@@ -13,6 +15,10 @@ import com.androiddevs.mvvmnewsapp.model.NewsResponse
 import com.androiddevs.mvvmnewsapp.repository.NewsRepository
 import com.androiddevs.mvvmnewsapp.utils.converters.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.io.IOException
@@ -32,8 +38,9 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
     val searchNews: LiveData<Resource<NewsResponse>> = _searchNews
     private val searchPageNumber = 1
 
-    private var _favouriteNews: MutableLiveData<Resource<NewsResponse>> = MutableLiveData()
-    val favouriteNews: LiveData<Resource<NewsResponse>> = _favouriteNews
+    private val connectivityManager = getApplication<NewsApplication>().getSystemService(
+        Context.CONNECTIVITY_SERVICE
+    ) as ConnectivityManager
 
     fun getBreakingNews(countryCode: String) = viewModelScope.launch {
         try {
@@ -63,20 +70,20 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
     }
 
     fun getSearchedNews(searchQuery: String) = viewModelScope.launch {
-       try {
-           if(checkNetworkConnection()){
-               _searchNews.postValue(Resource.Loading())
-               val response = repository.getSearchedNews(searchQuery, searchPageNumber)
-               _searchNews.postValue(handleSearchedNewsResponse(response))
-           }else{
-               _breakingNews.postValue(Resource.Error("No Internet Connection"))
-           }
-       }catch (t:Throwable){
-           when (t) {
-               is IOException -> _breakingNews.postValue(Resource.Error("Fatal Error"))
-               else -> _breakingNews.postValue(Resource.Error("Unknown Error"))
-           }
-       }
+        try {
+            if (checkNetworkConnection()) {
+                _searchNews.postValue(Resource.Loading())
+                val response = repository.getSearchedNews(searchQuery, searchPageNumber)
+                _searchNews.postValue(handleSearchedNewsResponse(response))
+            } else {
+                _breakingNews.postValue(Resource.Error("No Internet Connection"))
+            }
+        } catch (t: Throwable) {
+            when (t) {
+                is IOException -> _breakingNews.postValue(Resource.Error("Fatal Error"))
+                else -> _breakingNews.postValue(Resource.Error("Unknown Error"))
+            }
+        }
     }
 
     private fun handleSearchedNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
@@ -98,9 +105,7 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
     fun getAllFavouriteNews() = repository.getAllFavouriteNews()
 
     private fun checkNetworkConnection(): Boolean {
-        val connectivityManager = getApplication<NewsApplication>().getSystemService(
-            Context.CONNECTIVITY_SERVICE
-        ) as ConnectivityManager
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val activeNetwork = connectivityManager.activeNetwork ?: return false
             val capabilities =
@@ -124,4 +129,41 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
         return false
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun observeNetworkConnectivity(): Flow<Status> {
+        return callbackFlow<Status>
+        {
+            val observe = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    super.onAvailable(network)
+                    launch { send(Status.Available) }
+                }
+
+                override fun onLosing(network: Network, maxMsToLive: Int) {
+                    super.onLosing(network, maxMsToLive)
+                    launch { send(Status.Losing) }
+                }
+
+                override fun onLost(network: Network) {
+                    super.onLost(network)
+                    launch { send(Status.Lost) }
+                }
+
+                override fun onUnavailable() {
+                    super.onUnavailable()
+                    launch { send(Status.Unavailable) }
+                }
+            }
+            connectivityManager.registerDefaultNetworkCallback(observe)
+            awaitClose {
+                connectivityManager.unregisterNetworkCallback(observe)
+            }
+
+        }.distinctUntilChanged()
+    }
+
+}
+
+enum class Status {
+    Unavailable, Available, Lost, Losing
 }
