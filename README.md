@@ -22,3 +22,24 @@ Inorder to showing loading/progress bar when we fetch the next page we would be 
 
 2.	Then to our PagingDataApapter we need to call the following method withLoadStateHeaderAndFooter to add the LoaderAdapter.
 
+
+
+Adding Paging offline support using Remote Mediator
+
+Steps that we need to follow:-
+
+1.write logic to fetch page. 
+
+2. save it to DB(Room database Implementation).
+
+3.Another table is needed to maintain the keys REMOTEKEYS(ID,PrevKey,NextKey)
+
+4.This table is used to find the next and prev page.
+
+And we need to handle 3 scenarios
+
+1.First Time Fetch or Refresh
+
+2.Prepend(scroll up)
+
+3.Append(Scrool down)
