@@ -13,7 +13,9 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.androiddevs.mvvmnewsapp.R
 import com.androiddevs.mvvmnewsapp.ui.NewsActivity
+import com.androiddevs.mvvmnewsapp.ui.adapter.LoaderAdapter
 import com.androiddevs.mvvmnewsapp.ui.adapter.NewsAdapter
+import com.androiddevs.mvvmnewsapp.ui.adapter.PagingNewsAdapter
 import com.androiddevs.mvvmnewsapp.ui.viewmodel.NewsViewModel
 import com.androiddevs.mvvmnewsapp.utils.converters.Resource
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,7 +26,7 @@ import kotlinx.android.synthetic.main.fragment_breaking_news.view.*
 class BreakingNewsFragment : Fragment(R.layout.fragment_breaking_news) {
 
     private val viewModel: NewsViewModel by activityViewModels()
-    private lateinit var newsAdapter: NewsAdapter
+    private lateinit var pagingNewsAdapter: PagingNewsAdapter
 
     val TAG = "BreakingNewsFragment"
     override fun onCreateView(
@@ -51,7 +53,10 @@ class BreakingNewsFragment : Fragment(R.layout.fragment_breaking_news) {
                 is Resource.Success -> {
                     hideProgressBar()
                     clErrorView.isVisible = false
-                    newsAdapter.differ.submitList(result.data?.articles)
+                    viewModel.pagerBreakingNews?.observe(viewLifecycleOwner) {
+                        pagingNewsAdapter.submitData(lifecycle, it)
+                    }
+
                 }
                 is Resource.Loading -> {
                     showProgressBar()
@@ -59,7 +64,7 @@ class BreakingNewsFragment : Fragment(R.layout.fragment_breaking_news) {
                 }
             }
         }
-        newsAdapter.setOnItemClickListener {
+        pagingNewsAdapter.setOnItemClickListener {
             val bundle = Bundle()
             bundle.apply {
                 putSerializable("article", it)
@@ -71,10 +76,11 @@ class BreakingNewsFragment : Fragment(R.layout.fragment_breaking_news) {
     }
 
     private fun initRecyclerView() {
-        newsAdapter = NewsAdapter()
+        pagingNewsAdapter = PagingNewsAdapter()
         rvBreakingNews.apply {
             layoutManager = LinearLayoutManager(activity)
-            adapter = newsAdapter
+            adapter =
+                pagingNewsAdapter.withLoadStateHeaderAndFooter(LoaderAdapter(), LoaderAdapter())
         }
     }
 

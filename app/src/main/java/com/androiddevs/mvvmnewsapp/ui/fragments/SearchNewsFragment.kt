@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.androiddevs.mvvmnewsapp.R
 import com.androiddevs.mvvmnewsapp.ui.NewsActivity
 import com.androiddevs.mvvmnewsapp.ui.adapter.NewsAdapter
+import com.androiddevs.mvvmnewsapp.ui.adapter.PagingNewsAdapter
 import com.androiddevs.mvvmnewsapp.ui.viewmodel.NewsViewModel
 import com.androiddevs.mvvmnewsapp.utils.converters.Resource
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,7 +28,9 @@ import kotlinx.coroutines.launch
 class SearchNewsFragment : Fragment(R.layout.fragment_search_news) {
 
     private val viewModel: NewsViewModel by activityViewModels()
-    private lateinit var newsAdapter: NewsAdapter
+
+    //    private lateinit var newsAdapter: NewsAdapter
+    private lateinit var pagingNewsAdapter: PagingNewsAdapter
 
     private val TAG = "SearchNewsFragment"
 
@@ -68,7 +71,10 @@ class SearchNewsFragment : Fragment(R.layout.fragment_search_news) {
                 is Resource.Success -> {
                     hideProgressBar()
                     ivEmptyView.isVisible = false
-                    newsAdapter.differ.submitList(result.data?.articles)
+                    viewModel.pagerSearchNews?.observe(viewLifecycleOwner) {
+                        pagingNewsAdapter.submitData(lifecycle, it)
+                    }
+//                    newsAdapter.differ.submitList(result.data?.articles)
                 }
                 is Resource.Loading -> {
                     showProgressBar()
@@ -76,7 +82,7 @@ class SearchNewsFragment : Fragment(R.layout.fragment_search_news) {
                 }
             }
         }
-        newsAdapter.setOnItemClickListener {
+        pagingNewsAdapter.setOnItemClickListener {
             val bundle = Bundle()
             bundle.apply {
                 putSerializable("article", it)
@@ -88,10 +94,10 @@ class SearchNewsFragment : Fragment(R.layout.fragment_search_news) {
     }
 
     private fun initRecyclerView() {
-        newsAdapter = NewsAdapter()
+        pagingNewsAdapter = PagingNewsAdapter()
         rvSearchNews.apply {
             layoutManager = LinearLayoutManager(activity)
-            adapter = newsAdapter
+            adapter = pagingNewsAdapter
         }
     }
 

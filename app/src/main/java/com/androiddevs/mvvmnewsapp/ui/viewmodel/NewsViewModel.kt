@@ -9,9 +9,12 @@ import android.net.NetworkCapabilities.*
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.*
+import androidx.paging.*
 import com.androiddevs.mvvmnewsapp.NewsApplication
 import com.androiddevs.mvvmnewsapp.model.Article
 import com.androiddevs.mvvmnewsapp.model.NewsResponse
+import com.androiddevs.mvvmnewsapp.paging.BreakingNewsPagingSource
+import com.androiddevs.mvvmnewsapp.paging.SearchNewsPagingSource
 import com.androiddevs.mvvmnewsapp.repository.NewsRepository
 import com.androiddevs.mvvmnewsapp.utils.converters.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,10 +45,16 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
         Context.CONNECTIVITY_SERVICE
     ) as ConnectivityManager
 
+    var pagerBreakingNews: LiveData<PagingData<Article>>? = null
+    var pagerSearchNews: LiveData<PagingData<Article>>? = null
     fun getBreakingNews(countryCode: String) = viewModelScope.launch {
         try {
             if (checkNetworkConnection()) {
                 _breakingNews.postValue(Resource.Loading())
+                pagerBreakingNews = Pager(
+                    config = PagingConfig(pageSize = 10, maxSize = 40),
+                    pagingSourceFactory = { BreakingNewsPagingSource(repository, countryCode) }
+                ).liveData.cachedIn(viewModelScope)
                 val response = repository.getBreakingNews(countryCode, pageNumber)
                 _breakingNews.postValue(handleBreakingNewsResponse(response))
             } else {
@@ -73,6 +82,10 @@ class NewsViewModel @Inject constructor(app: Application, val repository: NewsRe
         try {
             if (checkNetworkConnection()) {
                 _searchNews.postValue(Resource.Loading())
+                pagerSearchNews = Pager(
+                    config = PagingConfig(pageSize = 10, maxSize = 40),
+                    pagingSourceFactory = { SearchNewsPagingSource(searchQuery, repository) }
+                ).liveData.cachedIn(viewModelScope)
                 val response = repository.getSearchedNews(searchQuery, searchPageNumber)
                 _searchNews.postValue(handleSearchedNewsResponse(response))
             } else {

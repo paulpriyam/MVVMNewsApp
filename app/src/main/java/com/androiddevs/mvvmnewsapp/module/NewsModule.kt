@@ -7,6 +7,7 @@ import com.androiddevs.mvvmnewsapp.BuildConfig
 import com.androiddevs.mvvmnewsapp.data.local.NewsDatabase
 import com.androiddevs.mvvmnewsapp.data.local.dao.NewsDao
 import com.androiddevs.mvvmnewsapp.data.remote.NewsApi
+import com.facebook.stetho.okhttp3.StethoInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,6 +33,7 @@ object NewsModule {
         val client = OkHttpClient
             .Builder()
             .addInterceptor(httpLoggingInterceptor)
+            .addNetworkInterceptor(StethoInterceptor())
             .build()
 
         return Retrofit.Builder()
